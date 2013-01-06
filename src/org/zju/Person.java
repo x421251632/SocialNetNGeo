@@ -18,15 +18,24 @@ public class Person {
 	Country country;
 	List<Person> linkTable = new LinkedList<Person>();
 	boolean hasInternationalContact = false;
+	boolean isSelected = false;
 	int type = INNOCENT;
 	float xInArcGraph;
 	float yInArcGraph;
 	void draw(SocialNetNGeo pa){
+		if(isSelected){
+			pa.stroke(0);
+			pa.strokeWeight(1);
+		}
+		else
+			pa.noStroke();
 		pa.fill(pa.colorMap.get(type));
 		pa.ellipse(xInArcGraph, yInArcGraph, 5, 5);
 	}
 	
-	void drawConnection(PGraphics pg,Person p){
-		
+	void drawConnection(SocialNetNGeo pa,Person p){
+		pa.noFill();
+		pa.bezier(xInArcGraph, yInArcGraph, pa.arcGraphCenterX, pa.arcGraphCenterY, pa.arcGraphCenterX, pa.arcGraphCenterY, p.xInArcGraph, p.yInArcGraph);
 	}
+	
 }
