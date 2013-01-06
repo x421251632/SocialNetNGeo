@@ -22,15 +22,20 @@ public class Person {
 	int type = INNOCENT;
 	float xInArcGraph;
 	float yInArcGraph;
+	float annotationSize;
 	void draw(SocialNetNGeo pa){
 		if(isSelected){
+			annotationSize = 15;
 			pa.stroke(0);
 			pa.strokeWeight(1);
 		}
-		else
-			pa.noStroke();
+		else{
+			annotationSize = 8;
+			pa.stroke(255);
+			pa.strokeWeight(1);
+		}
 		pa.fill(pa.colorMap.get(type));
-		pa.ellipse(xInArcGraph, yInArcGraph, 5, 5);
+		pa.ellipse(xInArcGraph, yInArcGraph, annotationSize, annotationSize);
 	}
 	
 	void drawConnection(SocialNetNGeo pa,Person p){
