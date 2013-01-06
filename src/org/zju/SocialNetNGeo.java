@@ -8,6 +8,7 @@ import java.util.Map;
 
 import processing.core.PApplet;
 import processing.core.PGraphics;
+import processing.core.PImage;
 
 @SuppressWarnings("serial")
 public class SocialNetNGeo extends PApplet{
@@ -44,6 +45,16 @@ public class SocialNetNGeo extends PApplet{
 		userCtnLevels.add(100);
 		userCtnLevels.add(6001);
 	}
+	List<Integer> ctnLevelColors = new ArrayList<Integer>();
+	{
+		//ctnLevelColors.add(color(255,255,0));
+		ctnLevelColors.add(color(255,255,0));
+		ctnLevelColors.add(color(255,204,0));//green
+		ctnLevelColors.add(color(255,153,0));
+		ctnLevelColors.add(color(255,102,0));//blue
+		ctnLevelColors.add(color(255,51,0));//
+		ctnLevelColors.add(color(255,0,0));//red
+	}
 	List<Integer> cityOrder = new LinkedList<Integer>();
 	{
 		cityOrder.add(6006);
@@ -60,7 +71,7 @@ public class SocialNetNGeo extends PApplet{
 		cityOrder.add(6012);
 	}
 	PGraphics arcGraph = null;
-	int sizeX = 800,sizeY = 600;
+	int sizeX = 1200,sizeY = 700;
 	final static int TARGET_TO_HANDLER_SELECTED = 2000;
 	final static int HANDLER_TO_MIDDLEMAN_SELECTED = 2001;
 	final static int MIDDLEMAN_TO_LEADER_SELECTED = 2002;
@@ -93,12 +104,13 @@ public class SocialNetNGeo extends PApplet{
 	float arcGraphCenterX;
 	float arcGraphCenterY;
 	boolean structure = true;					//true for a, false for b
-	
+	PImage img;
 	@Override
 	public void setup(){
 		System.out.print("setup");
 		readFile();
 		processInfos();
+		img = loadImage("Flovania.jpg");
 		size(sizeX,sizeY);
 	}
 
@@ -106,7 +118,8 @@ public class SocialNetNGeo extends PApplet{
 	public void draw(){
 		background(255);
 		drawCityUserTable();
-		drawCityUserArc();
+		//drawCityUserArc();
+		drawHeatMap();
 	}
 
 	Person pa;
@@ -406,6 +419,33 @@ public class SocialNetNGeo extends PApplet{
 		cities.get(6010).citySize = City.FOREIGNSMALL;
 		cities.get(6011).citySize = City.FOREIGNSMALL;
 		cities.get(6012).citySize = City.FOREIGNSMALL;
+
+		cities.get(6001).positionXRatio = 0.47f;
+		cities.get(6001).positionYRatio = 0.13f;
+		cities.get(6002).positionXRatio = 0.309f;
+		cities.get(6002).positionYRatio = 0.167f;
+		cities.get(6003).positionXRatio = 0.361f;
+		cities.get(6003).positionYRatio = 0.295f;
+		cities.get(6004).positionXRatio = 0.243f;
+		cities.get(6004).positionYRatio = 0.365f;
+		cities.get(6005).positionXRatio = 0.358f;
+		cities.get(6005).positionYRatio = 0.465f;
+		cities.get(6006).positionXRatio = 0.333f;
+		cities.get(6006).positionYRatio = 0.505f;
+		cities.get(6007).positionXRatio = 0.343f;
+		cities.get(6007).positionYRatio = 0.595f;
+		cities.get(6008).positionXRatio = 0.283f;
+		cities.get(6008).positionYRatio = 0.675f;
+		cities.get(6009).positionXRatio = 0.378f;
+		cities.get(6009).positionYRatio = 0.825f;
+		cities.get(6010).positionXRatio = 0.198f;
+		cities.get(6010).positionYRatio = 0.292f;
+		cities.get(6011).positionXRatio = 0.229f;
+		cities.get(6011).positionYRatio = 0.639f;
+		cities.get(6012).positionXRatio = 0.473f;
+		cities.get(6012).positionYRatio = 0.375f;
+		
+		
 		//generate city userCtn
 		for(City city:cities.values()){
 			city.userCtn =  new int[userCtnLevels.size()-1];
@@ -510,5 +550,59 @@ public class SocialNetNGeo extends PApplet{
 			}
 		}
 		return false;
+	}
+	
+	void drawHeatMap(){
+		float startX = 20;
+		float startY = 50;
+		float imageWidth = width-2*startX;
+		float imageHeight = height-2*startY;
+		
+		int maxNum = 0;
+		int sumNum = 0;
+		int alpha = 100;
+		
+		image(img,startX,startY,imageWidth, imageHeight);
+		
+		for(Integer id:cityOrder){
+			City c = cities.get(id);
+			for(int num:c.userCtn){
+				sumNum += num;
+			}
+			if(maxNum < sumNum)
+				maxNum = sumNum;
+		}
+		
+		for(Integer id:cityOrder){
+			City c = cities.get(id);
+			sumNum = 0;
+			alpha = 100;
+			float radius;
+			for(int num:c.userCtn){
+				sumNum += num;
+			}
+			for(int i = 0;i <c.userCtn.length;i++){
+				//System.out.println(""+sumNum);
+				radius = 5 * log (sumNum+2)/log (2);
+				fill(ctnLevelColors.get(i),alpha);
+				//System.out.println(""+radius);
+				ellipse(startX+imageWidth*c.positionXRatio, startY+imageHeight*c.positionYRatio, radius, radius);
+				alpha += 20;
+				sumNum -= c.userCtn[i];
+			}
+		}
+		
+		fill(255,255,255);
+		rect(startX+imageWidth-383,startY+1,383,imageHeight-3);
+		
+		alpha = 100;
+		int yStep = 70;
+		for(int i = 0;i < ctnLevelColors.size();i++){
+			fill(ctnLevelColors.get(i),alpha);
+			ellipse(startX+imageWidth-300,startY+200+i*yStep,50,50);
+			fill(0,0,0);
+			text(""+userCtnLevels.get(i)+"--"+userCtnLevels.get(i+1)+" links",startX+imageWidth-200,startY+200+i*yStep);
+			alpha += 20;
+		}
 	}
 }

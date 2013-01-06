@@ -21,4 +21,6 @@ public class City {
 	List<Person> targetSuspect = new LinkedList<Person>();
 	int citySize;
 	int[] userCtn;
+	float positionXRatio;
+	float positionYRatio;
 }
