@@ -113,7 +113,9 @@ public class SocialNetNGeo extends PApplet{
 			"Red nodes are big user(leader) with 100+ \n" +
 			"links and a international contact. Purple \n" +
 			"nodes are small user(middle man) who has \n" +
-			"less than 7 contacts";
+			"less than 7 contacts. \n\n" +
+			"Press SPACE to change structure A or B. \n" +
+			"Press TAB to change to the other graph.";
 	boolean structure = true;					//true for a, false for b
 	boolean graph = true;						//true for arcGraph, false for geoGraph
 	
@@ -197,10 +199,22 @@ public class SocialNetNGeo extends PApplet{
 	void drawCurrentTab(){
 		fill(255);
 		noStroke();
-		if(graph)
+		if(graph){
 			quad(930,5,900,35,1050,35,1020,5);
-		else
+			textSize(20);
+			fill(0);
+			textAlign(CENTER,CENTER);
+			text("Arc",975,15);
+			text("Geo",1085,17);
+		}
+		else{
 			quad(1040,5,1010,35,1160,35,1130,5);
+			textSize(20);
+			fill(0);
+			textAlign(CENTER,CENTER);
+			text("Arc",975,17);
+			text("Geo",1085,15);
+		}
 	}
 	
 	void drawCityUserArc(){
