@@ -2,11 +2,14 @@ package org.zju;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import processing.core.PApplet;
+import processing.core.PFont;
 import processing.core.PGraphics;
 
 @SuppressWarnings("serial")
@@ -60,13 +63,14 @@ public class SocialNetNGeo extends PApplet{
 		cityOrder.add(6012);
 	}
 	PGraphics arcGraph = null;
-	int sizeX = 800,sizeY = 600;
+	int sizeX = 1200,sizeY = 700;
 	final static int TARGET_TO_HANDLER_SELECTED = 2000;
 	final static int HANDLER_TO_MIDDLEMAN_SELECTED = 2001;
 	final static int MIDDLEMAN_TO_LEADER_SELECTED = 2002;
 	final static int TARGET_TO_HANDLER_HOVERED = 2003;
 	final static int HANDLER_TO_MIDDLEMAN_HOVERED = 2004;
 	final static int MIDDLEMAN_TO_LEADER_HOVERED = 2005;
+	final static int TO_INNOCENT = 2006;
 	Map<Integer,Integer> colorMap = new HashMap<Integer,Integer>();
 	{
 		colorMap.put(City.FOREIGNSMALL, color(85,104,48));
@@ -74,7 +78,7 @@ public class SocialNetNGeo extends PApplet{
 		colorMap.put(City.MID, color(20,130,180));
 		colorMap.put(City.LARGE, color(150,150,50));
 		colorMap.put(City.LARGER, color(150,50,50));
-		colorMap.put(Person.HANDLER, color(250,250,150));
+		colorMap.put(Person.HANDLER, color(200,200,130));
 		colorMap.put(Person.TARGET, color(150,200,150));
 		colorMap.put(Person.INNOCENT, color(255,255,255));
 		colorMap.put(Person.LEADER, color(250,150,150));
@@ -85,18 +89,37 @@ public class SocialNetNGeo extends PApplet{
 		colorMap.put(HANDLER_TO_MIDDLEMAN_HOVERED, color(130,130,200));
 		colorMap.put(MIDDLEMAN_TO_LEADER_SELECTED, color(160,50,50));
 		colorMap.put(MIDDLEMAN_TO_LEADER_HOVERED, color(200,130,130));
+		colorMap.put(TO_INNOCENT, color(130,130,130));
 	}
 	List<Person> middleManSuspect = new LinkedList<Person>();
 	List<Person> leaderSuspect = new LinkedList<Person>();
 	List<Person> handlerSuspect = new LinkedList<Person>();
-	List<Person> drawnPerson = new LinkedList<Person>();
+	List<Person> initPerson = new LinkedList<Person>();
+	Set<Person> drawnPerson = new HashSet<Person>();
+	Set<Person> nextDrawnPerson = new HashSet<Person>();
 	float arcGraphCenterX;
 	float arcGraphCenterY;
+	String toast = "";
+	float alpha = 0;
+	String instructions = "Strips denote the cities. Red Color is for \n" +
+			"Koul, Yellow Color is for Prounov and blue \n" +
+			"and green color are for other middle and \n" +
+			"small cities. The length of the strip \n" +
+			"depends on the number of the users belong \n" +
+			"to the city. The green nodes on the strips \n" +
+			"are target employees who has 30-50 links \n" +
+			"and 3 contact(handler-yellow nodes) who \n" +
+			"has 29-41 links and don't know each other. \n" +
+			"Red nodes are big user(leader) with 100+ \n" +
+			"links and a international contact. Purple \n" +
+			"nodes are small user(middle man) who has \n" +
+			"less than 7 contacts";
 	boolean structure = true;					//true for a, false for b
+	boolean graph = true;						//true for arcGraph, false for geoGraph
 	
 	@Override
 	public void setup(){
-		System.out.print("setup");
+		System.out.print(PFont.list());
 		readFile();
 		processInfos();
 		size(sizeX,sizeY);
@@ -104,21 +127,89 @@ public class SocialNetNGeo extends PApplet{
 
 	@Override
 	public void draw(){
-		background(255);
-		drawCityUserTable();
-		drawCityUserArc();
+		background(170);
+		rectMode(CORNERS);
+		drawTabs();
+		fill(170);
+		noStroke();
+		rect(0,28,width,height);
+		drawCurrentTabShadow();
+		fill(255);
+		rect(0,30,width,height);
+		drawCurrentTab();
+		if(graph)
+			drawCityUserArc();
+		drawToast();
 	}
 
-	Person pa;
-	Person pb;
+	@Override
+	public void mousePressed(){
+		synchronized(drawnPerson){
+			for(Person p : drawnPerson){
+				if(dist(mouseX,mouseY,p.xInArcGraph,p.yInArcGraph)<5){
+					p.isSelected = !p.isSelected;
+				}
+			}
+			drawnPerson.clear();
+			drawnPerson.addAll(initPerson);
+		}
+		if(mouseX>900&&mouseX<1020&&mouseY>5&&mouseY<35)
+			graph = true;
+		else if(mouseX>1010&&mouseX<1130&&mouseY>5&&mouseY<35)
+			graph = false;
+	}
+
+	@Override
+	public void keyPressed(){
+		if(key == ' '){
+			structure = !structure;
+			toast = "SPACE";
+			alpha = 255;
+			synchronized(drawnPerson){
+				drawnPerson.clear();
+				drawnPerson.addAll(initPerson);
+			}
+		}
+		else if(key == '\t'){
+			graph = !graph;
+			toast = "TAB";
+			alpha = 255;
+		}
+	}
+	
+	void drawTabs(){
+		fill(255);
+		stroke(170);
+		strokeWeight(2);
+		quad(930,5,900,35,1050,35,1020,5);
+		quad(1040,5,1010,35,1160,35,1130,5);
+	}
+	
+	void drawCurrentTabShadow(){
+		fill(170);
+		noStroke();
+		if(graph)
+			quad(927,5,897,35,1053,35,1023,5);
+		else
+			quad(1037,5,1007,35,1163,35,1133,5);
+	}
+	
+	void drawCurrentTab(){
+		fill(255);
+		noStroke();
+		if(graph)
+			quad(930,5,900,35,1050,35,1020,5);
+		else
+			quad(1040,5,1010,35,1160,35,1130,5);
+	}
+	
 	void drawCityUserArc(){
-		float diameter = 600;
-		float startDegree = 0,nextDegree;
-		float border = 0.01f;
-		arcGraphCenterX = width/2;
-		arcGraphCenterY = height/2;
-//		boolean flag = false;
 		if(arcGraph==null){
+			float diameter = min(width,(height-100));
+			float startDegree = 0,nextDegree;
+			float border = 0.01f;
+			arcGraphCenterX = width/2;
+			arcGraphCenterY = (height+100)/2;
 			arcGraph = createGraphics(width,height,JAVA2D);
 			arcGraph.beginDraw();
 			arcGraph.strokeWeight(1);
@@ -130,35 +221,35 @@ public class SocialNetNGeo extends PApplet{
 				arcGraph.arc(arcGraphCenterX, arcGraphCenterY, diameter ,diameter, startDegree+border,nextDegree-border);
 				List<Person> personToDraw = new LinkedList<Person>();
 				personToDraw.addAll(c.targetSuspect);
-				personToDraw.addAll(c.leaderSuspect);
+//				personToDraw.addAll(c.leaderSuspect);
+				initPerson.addAll(personToDraw);
 				drawnPerson.addAll(personToDraw);
-				float angleStep = (nextDegree - startDegree)/(personToDraw.size()+1);
-				float tmpDegree = startDegree;
+				float angleStep = (nextDegree - startDegree - 3*border)/(personToDraw.size()+1);
+				float tmpDegree = (float) (startDegree +  1.5* border);
 				for(Person person:personToDraw){
 					tmpDegree += angleStep;
-					float x = (diameter-10) / 2 * cos(tmpDegree) + arcGraphCenterX;
-					float y = (diameter-10) / 2 * sin(tmpDegree) + arcGraphCenterY;
+					float x = (diameter-15) / 2 * cos(tmpDegree) + arcGraphCenterX;
+					float y = (diameter-15) / 2 * sin(tmpDegree) + arcGraphCenterY;
 					person.xInArcGraph = x;
 					person.yInArcGraph = y;
-					System.out.println(c.name + " " + person.type + "x: " + x + " y:" + y);
+//					System.out.println(c.name + " " + person.type + "x: " + x + " y:" + y);
 				}
 				List<Person> personNotDraw = new LinkedList<Person>();
 				personNotDraw.addAll(c.people);
 				personNotDraw.removeAll(personToDraw);
-				angleStep = (nextDegree - startDegree)/(personNotDraw.size()+1);
-				tmpDegree = startDegree;
+				angleStep = (nextDegree - startDegree - 3* border)/(personNotDraw.size()+1);
+				tmpDegree = (float) (startDegree + 1.5* border);
 				for(Person person:personNotDraw){
 					tmpDegree += angleStep;
-					float x = (diameter-10) / 2 * cos(tmpDegree) + arcGraphCenterX;
-					float y = (diameter-10) / 2 * sin(tmpDegree) + arcGraphCenterY;
+					float x = (diameter-15) / 2 * cos(tmpDegree) + arcGraphCenterX;
+					float y = (diameter-15) / 2 * sin(tmpDegree) + arcGraphCenterY;
 					person.xInArcGraph = x;
 					person.yInArcGraph = y;
-					System.out.println(person.country.name);
 				}
 				startDegree = nextDegree;
 			}
 			arcGraph.fill(255);
-			arcGraph.arc(width/2, height/2, diameter-30, diameter-30, 0, 2*PI);
+			arcGraph.arc(arcGraphCenterX, arcGraphCenterY, diameter-30, diameter-30, 0, 2*PI);
 			arcGraph.endDraw();
 		}
 		else{
@@ -169,14 +260,65 @@ public class SocialNetNGeo extends PApplet{
 			}
 			drawSelectedPerson();
 			drawHoveredPerson();
+			drawStructrueType();
+			drawArcGraphInfo();
+			drawHoverdPersonInfo();
 		}
 	}
 	
-	@Override
-	public void mousePressed(){
-		for(Person p : drawnPerson){
-			if(dist(mouseX,mouseY,p.xInArcGraph,p.yInArcGraph)<5){
-				p.isSelected = !p.isSelected;
+	void drawToast(){
+		textSize(200);
+		textAlign(CENTER,CENTER);
+		alpha = (float) (alpha *0.8);
+		fill(40,40,40,alpha);
+		text(toast,width/2,height/2);
+	}
+	
+	void drawArcGraphInfo(){
+		textSize(13);
+		textAlign(LEFT,TOP);
+		fill(0);
+		text(instructions,20,200);
+	}
+	
+	void drawStructrueType(){
+		textSize(200);
+		textAlign(CENTER,BOTTOM);
+		fill(180,120,120);
+		if(structure){
+			text("A",70,220);
+		}
+		else{
+			text("B",70,220);
+		}
+		textSize(30);
+		text("structrue",210,190);
+	}
+	
+	void drawHoverdPersonInfo(){
+		fill(0);
+		textSize(20);
+		textAlign(LEFT,CENTER);
+		text("name",930,200);
+		text("id",930,250);
+		text("links",930,300);
+		text("city",930,350);
+		text("country",930,400);
+		synchronized(drawnPerson){
+			for(Person p : drawnPerson){
+				if(dist(mouseX,mouseY,p.xInArcGraph,p.yInArcGraph)<10){
+					String name = p.name;
+					int id = p.id;
+					int links = p.linkTable.size();
+					String cityName = p.city.name;
+					String countryName = p.country.name;
+					text(name,1080,200);
+					text(id,1080,250);
+					text(links,1080,300);
+					text(cityName,1080,350);
+					text(countryName,1080,400);
+					break;
+				}
 			}
 		}
 	}
@@ -184,15 +326,35 @@ public class SocialNetNGeo extends PApplet{
 	void drawHoveredPerson(){
 		strokeWeight(1);
 		stroke(255);
-		for(Person p : drawnPerson){
-			if(dist(mouseX,mouseY,p.xInArcGraph,p.yInArcGraph)<5){
-				if(p.type == Person.TARGET){
-					drawTargetRelationship(p,true);
-				}
-				else if(p.type == Person.LEADER){
-					for(Person contact:p.linkTable){
-						if(p.country!=contact.country){
-							stroke(colorMap.get(MIDDLEMAN_TO_LEADER_HOVERED));
+		synchronized(drawnPerson){
+			for(Person p : drawnPerson){
+				if(dist(mouseX,mouseY,p.xInArcGraph,p.yInArcGraph)<10){
+					if(p.type == Person.TARGET){
+						drawTargetRelationship(p,true);
+					}
+					else if(p.type == Person.LEADER){
+						for(Person contact:p.linkTable){
+							if(p.country!=contact.country){
+								stroke(colorMap.get(MIDDLEMAN_TO_LEADER_HOVERED));
+								p.drawConnection(this, contact);
+								contact.draw(this);
+							}
+						}
+					}
+					else if(p.type == Person.MIDDLEMAN){
+						for(Person contact:p.linkTable){
+							if(contact.type == Person.INNOCENT){
+								stroke(colorMap.get(TO_INNOCENT));
+							}
+							else if(contact.type == Person.LEADER){
+								stroke(colorMap.get(MIDDLEMAN_TO_LEADER_HOVERED));
+							}
+							else if(contact.type == Person.HANDLER){
+								stroke(colorMap.get(HANDLER_TO_MIDDLEMAN_HOVERED));
+							}
+							else if(contact.type == Person.TARGET){
+								stroke(colorMap.get(HANDLER_TO_MIDDLEMAN_HOVERED));
+							}
 							p.drawConnection(this, contact);
 							contact.draw(this);
 						}
@@ -205,34 +367,62 @@ public class SocialNetNGeo extends PApplet{
 	void drawSelectedPerson(){
 		strokeWeight(1);
 		stroke(0);
-		for(Person p : drawnPerson){
-			if(p.isSelected){
-				if(p.type == Person.TARGET){
-					drawTargetRelationship(p,false);
-				}
-				else if(p.type == Person.LEADER){
-					for(Person contact:p.linkTable){
-						if(p.country!=contact.country){
-							stroke(colorMap.get(MIDDLEMAN_TO_LEADER_SELECTED));
+		synchronized(drawnPerson){
+			nextDrawnPerson.clear();
+			nextDrawnPerson.addAll(drawnPerson);
+			for(Person p : drawnPerson){
+				if(p.isSelected){
+					if(p.type == Person.TARGET){
+						drawTargetRelationship(p,false);
+					}
+					else if(p.type == Person.LEADER){
+						for(Person contact:p.linkTable){
+							if(p.country!=contact.country){
+								stroke(colorMap.get(MIDDLEMAN_TO_LEADER_SELECTED));
+								p.drawConnection(this, contact);
+								nextDrawnPerson.add(contact);
+								contact.draw(this);
+							}
+						}
+					}
+					else if(p.type == Person.MIDDLEMAN){
+						for(Person contact:p.linkTable){
+							if(contact.type == Person.INNOCENT){
+								stroke(colorMap.get(TO_INNOCENT));
+							}
+							else if(contact.type == Person.LEADER){
+								stroke(colorMap.get(MIDDLEMAN_TO_LEADER_SELECTED));
+							}
+							else if(contact.type == Person.HANDLER){
+								stroke(colorMap.get(HANDLER_TO_MIDDLEMAN_SELECTED));
+							}
+							else if(contact.type == Person.TARGET){
+								stroke(colorMap.get(HANDLER_TO_MIDDLEMAN_SELECTED));
+							}
 							p.drawConnection(this, contact);
 							contact.draw(this);
 						}
 					}
 				}
 			}
+			drawnPerson.clear();
+			drawnPerson.addAll(nextDrawnPerson);
 		}
 	}
 	
 	void drawTargetRelationship(Person p,boolean isHover){
+		strokeWeight(1);
 		List<Person> handlersFound = new LinkedList<Person>();
 		for(Person contact:p.linkTable){
-			if(contact.type==Person.HANDLER||contact.type==Person.TARGET){
+//			if(contact.type == Person.HANDLER||contact.type == Person.TARGET ){
+			if(isSuspectHandler(contact)){
 				if(isHover)
 					stroke(colorMap.get(TARGET_TO_HANDLER_HOVERED));
 				else
 					stroke(colorMap.get(TARGET_TO_HANDLER_SELECTED));
 				p.drawConnection(this, contact);
 				contact.draw(this);
+				nextDrawnPerson.add(contact);
 				handlersFound.add(contact);
 			}
 		}
@@ -246,6 +436,7 @@ public class SocialNetNGeo extends PApplet{
 				}
 				if(handlerOfMiddel.size() >= 3){
 					middle.draw(this);
+					nextDrawnPerson.add(middle);
 					for(Person handler: handlerOfMiddel){
 						if(isHover)
 							stroke(colorMap.get(HANDLER_TO_MIDDLEMAN_HOVERED));
@@ -256,6 +447,7 @@ public class SocialNetNGeo extends PApplet{
 					for(Person leader: middle.linkTable){
 						if(leader.type == Person.LEADER){
 							leader.draw(this);
+							nextDrawnPerson.add(leader);
 							if(isHover)
 								stroke(colorMap.get(MIDDLEMAN_TO_LEADER_HOVERED));
 							else
@@ -271,16 +463,31 @@ public class SocialNetNGeo extends PApplet{
 				List<Person> middleManOfLeader = new LinkedList<Person>();
 				for(Person handler:handlersFound){
 					for(Person middle:middleManSuspect){
-						if(handler.linkTable.contains(middle)&&leader.linkTable.contains(middle)){
+						if(handler.linkTable.contains(middle)&&leader.linkTable.contains(middle)&&!middleManOfLeader.contains(middle)){
 							middleManOfLeader.add(middle);
 							break;
 						}
 					}
 				}
 				if(middleManOfLeader.size()>=3){
+					nextDrawnPerson.add(leader);
+					leader.draw(this);
 					for(Person middle:middleManOfLeader){
+						middle.draw(this);
+						nextDrawnPerson.add(middle);
+						if(isHover)
+							stroke(colorMap.get(MIDDLEMAN_TO_LEADER_HOVERED));
+						else
+							stroke(colorMap.get(MIDDLEMAN_TO_LEADER_SELECTED));
+						middle.drawConnection(this, leader);
 						for(Person handler:handlersFound){
-							
+							if(handler.linkTable.contains(middle)){
+								if(isHover)
+									stroke(colorMap.get(HANDLER_TO_MIDDLEMAN_HOVERED));
+								else
+									stroke(colorMap.get(HANDLER_TO_MIDDLEMAN_SELECTED));
+								handler.drawConnection(this, middle);
+							}
 						}
 					}
 				}
@@ -452,7 +659,7 @@ public class SocialNetNGeo extends PApplet{
 	}
 	
 	boolean isSuspectHandler(Person person){
-		if(person.linkTable.size()<=40&&person.linkTable.size()>=30&&person.country==countries.get(6013))
+		if(person.linkTable.size()<=41&&person.linkTable.size()>=29&&person.country==countries.get(6013))
 			return true;
 		return false;
 	}
@@ -487,10 +694,10 @@ public class SocialNetNGeo extends PApplet{
 	}
 	
 	boolean isTarget(Person person){
-		if(person.linkTable.size()>30&&person.linkTable.size()<50){
+		if(person.linkTable.size()>=30&&person.linkTable.size()<=50){
 			List<Person> handlersOfHim = new LinkedList<Person>();
 			for(Person contact:person.linkTable){
-				if(contact.type==Person.HANDLER){
+				if(isSuspectHandler(contact)){
 					handlersOfHim.add(contact);
 				}
 			}
